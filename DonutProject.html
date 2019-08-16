@@ -6,7 +6,7 @@
 -->
 <html>
 	<head>
-		<title>Generic Page - Massively by HTML5 UP</title>
+		<title>Oscar Wibergs Portfolio</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
@@ -53,11 +53,15 @@
 									</div>
 								</div>
 								<header class="minor">
-								<H2>The Save Gamee</H2>
 								</header>
-								<p>The game was in need of a saving system to save high score, money and the equipment of the player. I took this upon myself as I Jave previously only done this in blueprint (drag and drop programming) and thought it could be good to translate that knowledge into C++. I encountered very few problems when creating this system, most of which stemmed from my inexperience within the engine, the biggest problem I had when developing this was that I was looking at the wrong place. I was certain that the fault laid in the saving and loading function when it in fact was the variables where I saved my score that wasn’t of the right type.</p>
-								<div class="image main"><img src="images/pic01.jpg" alt="" /></div>
-								<iframe src="https://gist.github.com/R083rto/1426ce60cbb284bb946768a0a990fef7"></iframe>
+								<button class="accordion">The Save Gamee</button>
+								<div class="panel">
+									<p>The game was in need of a saving system to save high score, money and the equipment of the player. I took this upon myself as I Jave previously only done this in blueprint (drag and drop programming) and thought it could be good to translate that knowledge into C++. I encountered very few problems when creating this system, most of which stemmed from my inexperience within the engine, the biggest problem I had when developing this was that I was looking at the wrong place. I was certain that the fault laid in the saving and loading function when it in fact was the variables where I saved my score that wasn’t of the right type.</p>
+									<button class="accordion">Code</button>
+										<div class="panel">
+										<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+									</div>
+								</div>
 								<header class="minor">
 								<H2>Air maneuvering</H2>
 								</header>
@@ -130,6 +134,25 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+			<script>
+			var acc = document.getElementsByClassName("accordion");
+var i;
+
+for (i = 0; i < acc.length; i++) {
+  acc[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var panel = this.nextElementSibling;
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+    } else {
+      panel.style.display = "block";
+    }
+  });
+}
+			</script>
 
 	</body>
+
+
+
 </html>
