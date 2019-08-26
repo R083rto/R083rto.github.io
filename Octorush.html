@@ -45,7 +45,6 @@
 						<!-- Post -->
 							<section class="post">
 								<header class="major">
-									<span class="date">April 25, 2017</span>
 									<h1> Octorush</h1>
 									<p>Octorush was a 4-week project that I took part in at future games. Through revisions in the product, we scrapped a lot halfway through including the AI that I was working on. I instead got to work on the main interactable and game feel. In this project, I worked in the Unreal engine with mainly C++, but sometimes shifted things into blueprints for convinces of the group. </p>
 								</header>
@@ -57,12 +56,303 @@
 								<header class="minor">
 										<H2>AI</H2>
 										</header>
-								<p>The scraped AI was supposed to patrol until it saw or heard the player at which point it would chase them down until it came close enough at which point it would stop for a moment before rapidly throwing itself towards the player. </p>
+								<p>The scraped AI was supposed to patrol until it saw or heard the player at which point it would chase them down until it came close enough where it would stop for a moment before rapidly throwing itself towards the player. </p>
+								<button class="accordion">AI Controller</button>
+								<div class="panel">
+								<pre><code>ALAIController::ALAIController()
+{
+	LineTraceCollisionQueryParams = FCollisionQueryParams(SCENE_QUERY_STAT(LineTraceSingle), false);
+}
+
+void ALAIController::Tick(float Delattime)
+{
+	Super::Tick(Delattime);
+	float Distance = (PlayerPawn->GetActorLocation() - ControlledPawn->GetActorLocation()).Size();
+	UCharacterMovementComponent* MovementComp = Cast<UCharacterMovementComponent>(ControlledPawn->GetMovementComponent());
+
+	if (ControlledPawn->GetGuardState() == EAIState::idle || ControlledPawn->GetGuardState() == EAIState::sleep)
+	{
+		return;
+	}
+
+	if (ControlledPawn->GetGuardState() == EAIState::charging)
+	{
+		MoveToLocation(FVector(ChargePoint.X,ChargePoint.Y, ControlledPawn->GetActorLocation().Z));//TODO check if its possible to move to player
+		if ((ControlledPawn->GetActorLocation() - FVector(ChargePoint.X, ChargePoint.Y, ControlledPawn->GetActorLocation().Z)).Size() < 50)
+			ControlledPawn->StartCooldown();
+	}
+	else
+	{
+		SoundCheck(Distance);
+
+		SightCheck(Distance);
+			
+		//patroling
+		if (ControlledPawn->GetGuardState() == EAIState::patroling && ControlledPawn->GetVelocity().Size() == 0)
+			MoveToLocation(ControlledPawn->GetNextPatrolPoint());
+	}
+}
+
+void ALAIController::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	ControlledPawn = Cast<AALGuard>(GetPawn());
+	PlayerPawn = Cast<AALCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	
+	LineTraceCollisionQueryParams.AddIgnoredActor(ControlledPawn);
+}
+
+void ALAIController::SightCheck(float Distance)
+{
+	if (ControlledPawn->CanISeePlayer(PlayerPawn->GetActorLocation()) && ControlledPawn->GetGuardState() != EAIState::idle)
+	{
+		//TODO make less taxing on system
+		LineTraceCollisionQueryParams.AddIgnoredActor(ControlledPawn);
+		GetWorld()->LineTraceSingleByChannel(HitResult, ControlledPawn->GetActorLocation(), PlayerPawn->GetActorLocation(), ECC_WorldStatic, LineTraceCollisionQueryParams);
+		if (HitResult.GetActor() == PlayerPawn)
+		{
+			ControlledPawn->SetGuardState(EAIState::chasing);
+			MoveToLocation(PlayerPawn->GetActorLocation());
+		}
+
+		if (Distance &lt ControlledPawn->GetChargRange() || ControlledPawn->GetIfCanCharge() == false)
+			ControlledPawn->GuardChargeWindUp(ChargePoint = PlayerPawn->GetActorLocation());
+	}
+	else
+		ControlledPawn->SetGuardState(EAIState::patroling);
+}
+
+void ALAIController::SoundCheck(float Distance)
+{
+	if (ControlledPawn->GetIfCanHearPlayer())
+	{
+		if (PlayerPawn->FindComponentByClass<UALRadioactiveAbilityComponent>() != nullptr)
+		{
+			if (PlayerPawn->FindComponentByClass<UALRadioactiveAbilityComponent>()->IsOn == true)
+			{
+				ControlledPawn->TurnTowardsPlayer(PlayerPawn->GetActorLocation());
+				return;
+			}
+		}
+
+		if (PlayerPawn->ReturnIfSneaking() == false && PlayerPawn->ReturnIfSprinting() == false)
+		{
+			if (Distance &lt= ControlledPawn->GetSensingSphereRadius()/2.f)
+				ControlledPawn->TurnTowardsPlayer(PlayerPawn->GetActorLocation());
+		}
+		else if (PlayerPawn->ReturnIfSprinting() == true)
+		{
+			ControlledPawn->TurnTowardsPlayer(PlayerPawn->GetActorLocation());
+		}
+	}
+}</code></pre>
+								</div>
 								<button class="accordion">Code snipet</button>
 								<div class="panel">
-								<pre><code>
-									code here plz						
-								</code></pre>
+										<pre><code>AALGuard::AALGuard()
+{
+	PrimaryActorTick.bCanEverTick = false;
+
+	SensingSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sensing Sphere"));
+	SensingSphere->SetSphereRadius(96);
+	SensingSphere->SetupAttachment(RootComponent);
+
+	SensingSphere->OnComponentBeginOverlap.AddDynamic(this, &AALGuard::OnSphereOverlap);
+	SensingSphere->OnComponentEndOverlap.AddDynamic(this, &AALGuard::OnSphereEndOverlap);
+	
+
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AALGuard::GuardHit);
+
+	GuardState = EAIState::patroling;
+}
+
+void AALGuard::BeginPlay()
+{
+	Super::BeginPlay();
+
+	PatrolPoint = PatrolPoints.Num()-1;
+
+	StartPosition = GetActorLocation();
+
+	CanHearPlayer = false;
+}
+
+void AALGuard::SetGuardState(EAIState NewState)
+{
+	if (GuardState == NewState) return;
+
+	GuardState = NewState;
+}
+
+EAIState AALGuard::GetGuardState()
+{
+	return GuardState;
+}
+
+FVector AALGuard::GetNextPatrolPoint()
+{
+	if (PatrolPoints[PatrolPoint] == nullptr)
+		return StartPosition;
+
+	if (!IsCharacterAtPatrolpoint())
+		return PatrolPoints[PatrolPoint]->GetActorLocation();
+	
+	PatrolPoint++;
+	if (PatrolPoint &lt= PatrolPoints.Num() - 1)
+		return PatrolPoints[PatrolPoint]->GetActorLocation();
+	else
+		PatrolPoint = 0;
+	return PatrolPoints[PatrolPoint]->GetActorLocation();
+}
+
+bool AALGuard::IsCharacterAtPatrolpoint()
+{
+	FVector Distance = PatrolPoints[PatrolPoint]->GetActorLocation() - GetActorLocation();
+
+	if (Distance.Size() &lt PatrolPointRadius)
+		return true;
+	else
+		return false;
+}
+
+bool AALGuard::CanISeePlayer(FVector PlayerPos)
+{
+	FVector Distance = PlayerPos - GetActorLocation();
+	float DotProduct = FVector::DotProduct(Distance.GetSafeNormal(), GetActorForwardVector());
+
+	if (Distance.Size() > ViewMaxRange)
+		return false;
+
+	if (FMath::Acos(DotProduct) * (180 / 3.1415926) &lt FieldOfView / 2)
+	{
+		PlayerSpoted.Broadcast();
+		return true;
+	}
+	else 
+		return false;
+}
+
+void AALGuard::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+	if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
+		CanHearPlayer = true;
+}
+
+void AALGuard::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
+		CanHearPlayer = false;
+}
+
+void AALGuard::DrawSightCone(float DotProduct)
+{
+	FRotator Rot(0, 0, 0);
+	FVector Rotator = GetActorForwardVector()*ViewMaxRange;
+
+	DrawDebugLine(GetWorld(), GetActorLocation(),GetActorLocation() + GetActorForwardVector()*ViewMaxRange, FColor::Red, false, 0);
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + GetActorForwardVector()*ViewMaxRange, FColor::Red, false, 0);
+}
+
+bool AALGuard::GetIfCanHearPlayer()
+{
+	return CanHearPlayer;
+}
+
+bool AALGuard::GetIfCanCharge()
+{
+	return CanMove;
+}
+
+void AALGuard::TurnTowardsPlayer(FVector PlayerPos)
+{
+	FVector Direction = PlayerPos - GetActorLocation();
+	Direction.Normalize();
+
+	FRotator NewLookAt = FRotationMatrix::MakeFromX(Direction).Rotator();
+	NewLookAt.Pitch = 0.0f;
+	NewLookAt.Roll = 0.0f;
+
+	SetActorRotation(NewLookAt);
+}
+
+float AALGuard::GetSensingSphereRadius()
+{
+	return SensingSphere->GetUnscaledSphereRadius();
+}
+
+void AALGuard::GuardChargeWindUp(FVector PlayerPos)
+{
+	GetController()->StopMovement();
+	TurnTowardsPlayer(PlayerPos);
+
+	if (!CanMove) return;
+	CanMove = false;
+
+	ChargeWindUp.Broadcast();
+	if (GetCharacterMovement()->MaxWalkSpeed != SlowSpeed)
+		GetCharacterMovement()->MaxWalkSpeed = ChargeSpeed;
+
+	GetWorldTimerManager().SetTimer(WindUpHandler, this, &AALGuard::GuardCharge, WindUpTime, false);
+}
+
+void AALGuard::StartSleep()
+{
+	UE_LOG(LogTemp, Warning, TEXT("zZz zZz zZz"))
+	GetWorldTimerManager().SetTimer(SleepHandler, this, &AALGuard::EndSleep, SleepTime, false);
+	SetGuardState(EAIState::sleep);
+}
+
+void AALGuard::EndSleep()
+{
+	SetGuardState(EAIState::patroling);
+
+}
+
+float AALGuard::GetChargRange()
+{
+	return ChargeRange;
+}
+
+void AALGuard::GuardCharge()
+{
+	if (GetGuardState() == EAIState::sleep) return;
+
+	SetGuardState(EAIState::charging);
+	CanMove = true;
+	ChargeStart.Broadcast();
+}
+
+void AALGuard::StartCooldown()
+{
+	if (GetGuardState() == EAIState::idle) return;
+
+	GetWorldTimerManager().SetTimer(CooldownHandler, this, &AALGuard::EndCooldown, CooldownTime, false);
+
+	UE_LOG(LogTemp, Warning, TEXT("Cooldown has been started"))
+
+	if (GetCharacterMovement()->MaxWalkSpeed != SlowSpeed)
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	SetGuardState(EAIState::idle);
+	CooldownStart.Broadcast();
+}
+
+void AALGuard::EndCooldown()
+{
+	SetGuardState(EAIState::chasing);
+	CooldownEnd.Broadcast();
+}
+
+void AALGuard::StartSlow()
+{
+	GetCharacterMovement()->MaxWalkSpeed = SlowSpeed;
+}
+
+void AALGuard::EndSlow()
+{
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}</code></pre>
 								</div>
 								<header class="minor">
 										<H2>Placeholder headlineg</H2>
@@ -73,7 +363,6 @@
 								<pre><code>
 									code her plz
 								</code></pre>
-							
 								</div>
 							</section>
 
