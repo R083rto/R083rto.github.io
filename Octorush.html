@@ -57,7 +57,7 @@
 										<H2>AI</H2>
 										</header>
 								<p>The scraped AI was supposed to patrol until it saw or heard the player at which point it would chase them down until it came close enough where it would stop for a moment before rapidly throwing itself towards the player. </p>
-								<button class="accordion">AI Controller</button>
+								<button class="accordion">AI Controller code</button>
 								<div class="panel">
 								<pre><code>ALAIController::ALAIController()
 {
@@ -148,7 +148,7 @@ void ALAIController::SoundCheck(float Distance)
 	}
 }</code></pre>
 								</div>
-								<button class="accordion">Code snipet</button>
+								<button class="accordion">Ai Guard code</button>
 								<div class="panel">
 										<pre><code>AALGuard::AALGuard()
 {
@@ -353,16 +353,93 @@ void AALGuard::EndSlow()
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }</code></pre>
+								
 								</div>
+								<p>It was planned that the AI was supposed to take note of things that had changed in the environment because of the player. So, if an AI in its patrol sees a misplaced box it will move to the closest position of it and look around for other misplaced objects, rinse and repeat until the player is found or the trail leads to a dead end. </p>
 								<header class="minor">
-										<H2>Placeholder headlineg</H2>
+										<H2>Oil Barrel interactable</H2>
 										</header>
-								<p>placeholder text</p>
-								<button class="accordion">Code snipet</button>
+								<p>The main interactable was the common red barrel. The player has a projectile which when hitting a barrel directly would cause an explosion but when hitting something else would cause a small black hole to appear that pulls objects towards it.  If a barrel was caught in the black hole effect it would spill out oil on the floor. If the player then walks through the oil, they gain the oily status. Which for game feel makes the player move faster with more sliding movement, but gameplaywise makes the player able to traverse through tight spaces. </p>
+								<button class="accordion">Oil Barrel code</button>
 								<div class="panel">
-								<pre><code>
-									code her plz
-								</code></pre>
+								<pre><code>AALOilBarrel::AALOilBarrel()
+{
+	
+	BarrelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BarrelMesh"));
+	BarrelMesh->SetupAttachment(RootComponent);
+
+	BarrelHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("BarrelHitBox"));
+	BarrelHitBox->SetupAttachment(BarrelMesh);
+
+	BarrelHitBox->OnComponentHit.AddDynamic(this, &AALOilBarrel::ExploadOnHit);
+}
+
+void AALOilBarrel::BeginPlay()
+{
+	Super::BeginPlay();
+
+	StartPos = GetActorLocation();
+
+	LineTraceCollisionQueryParams.AddIgnoredActor(this);
+}
+
+void AALOilBarrel::ExploadOnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+
+	if (AALProjectile* Projectile = Cast<AALProjectile>(OtherActor))
+	{
+
+		if (Projectile->IsExploding)
+		{
+			Expload();
+			return;
+		}
+	
+
+	}
+	else if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
+	{
+		
+		return;
+	}
+	else if (!IsEmpty && OtherActor->ActorHasTag(FName("Floor")))
+	{
+		
+		SpawnOil();
+		IsEmpty = true;
+	}
+}
+
+void AALOilBarrel::SpawnOil()
+{
+	FVector GLocation;
+	FRotator GRotation;
+	FindGround(GLocation,GRotation);
+	GetWorld()->SpawnActor<AActor>(OilClass, GLocation, GRotation);
+	BPSpawnOil(GLocation,GRotation);
+}
+
+void AALOilBarrel::FindGround(FVector& GroundLocation, FRotator& GroundRotation)
+{
+	GetWorld()->LineTraceSingleByChannel(OilTrace, GetActorLocation(), GetActorLocation() + FVector(0, 0, -1) * 1000, ECC_WorldStatic, LineTraceCollisionQueryParams);
+	FName TagToLookFor = "Floor";
+	if (OilTrace.Actor == nullptr)
+	{
+		return;
+	}
+	if (OilTrace.Actor->ActorHasTag(TagToLookFor))
+	{
+		GroundLocation = OilTrace.Location;
+		GroundRotation = FRotator(0);
+		return;
+	}
+	else
+	{
+			AActor* HitActor = Cast<AActor>(OilTrace.Actor);
+		LineTraceCollisionQueryParams.AddIgnoredActor(HitActor);
+		FindGround(GroundLocation, GroundRotation);
+	}
+}</code></pre>
 								</div>
 							</section>
 
