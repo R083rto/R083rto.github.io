@@ -46,8 +46,28 @@
 							<section class="post">
 								<header class="major">
 									<h1> Octorush</h1>
-									<p>Octorush was a 4-week project that I took part in at future games. Through revisions in the product, we scrapped a lot halfway through including the AI that I was working on. I instead got to work on the main interactable and game feel. In this project, I worked in the Unreal engine with mainly C++, but sometimes shifted things into blueprints for convinces of the group. </p>
+									<div class="row gtr-50 gtr-uniform width=100%">
+											<div class="col-4">								
+												<p style="text-align:right;color:rgb(117,120,255);padding-left: 0px;margin-right: 180px">
+												Engine:<br>
+												Language:<br>
+												Development time:<br>
+												Team Size:
+												</p></div>
+											<div class="col-4">								
+												<p style="text-align:Left;margin-left: -190px">
+												Unreal Engine 4<br>
+												C++<br>
+												4 weeks<br>
+												11
+												</p></div>
+											<div class="col-4">								
+												<p style="margin-left: -400px;">Octorush was a 4-week project that I took part in at future games. Through revisions in the product, we scrapped a lot halfway through including the AI that I was working on. I instead got to work on the main interactable and game feel. In this project, I worked in the Unreal engine with mainly C++, but sometimes shifted things into blueprints for convinces of the group. 
+												</p></div>
+												
+									</div>
 								</header>
+
 								<div class="wrapper">
 									<div class="videowrapper">	
 										<iframe width="560" height="315" src="https://www.youtube.com/embed/7d9DUW5W0oM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -59,7 +79,7 @@
 								<p>The scraped AI was supposed to patrol until it saw or heard the player at which point it would chase them down until it came close enough where it would stop for a moment before rapidly throwing itself towards the player. </p>
 								<button class="accordion">AI Controller code</button>
 								<div class="panel">
-								<pre><code>ALAIController::ALAIController()
+								<pre><code style="font-size:12px">ALAIController::ALAIController()
 {
 	LineTraceCollisionQueryParams = FCollisionQueryParams(SCENE_QUERY_STAT(LineTraceSingle), false);
 }
@@ -78,7 +98,7 @@ void ALAIController::Tick(float Delattime)
 	if (ControlledPawn->GetGuardState() == EAIState::charging)
 	{
 		MoveToLocation(FVector(ChargePoint.X,ChargePoint.Y, ControlledPawn->GetActorLocation().Z));//TODO check if its possible to move to player
-		if ((ControlledPawn->GetActorLocation() - FVector(ChargePoint.X, ChargePoint.Y, ControlledPawn->GetActorLocation().Z)).Size() < 50)
+		if ((ControlledPawn->GetActorLocation() - FVector(ChargePoint.X, ChargePoint.Y, ControlledPawn->GetActorLocation().Z)).Size() &lt 50)
 			ControlledPawn->StartCooldown();
 	}
 	else
@@ -109,7 +129,8 @@ void ALAIController::SightCheck(float Distance)
 	{
 		//TODO make less taxing on system
 		LineTraceCollisionQueryParams.AddIgnoredActor(ControlledPawn);
-		GetWorld()->LineTraceSingleByChannel(HitResult, ControlledPawn->GetActorLocation(), PlayerPawn->GetActorLocation(), ECC_WorldStatic, LineTraceCollisionQueryParams);
+		GetWorld()->LineTraceSingleByChannel(HitResult, ControlledPawn->GetActorLocation(),
+		 PlayerPawn->GetActorLocation(), ECC_WorldStatic, LineTraceCollisionQueryParams);
 		if (HitResult.GetActor() == PlayerPawn)
 		{
 			ControlledPawn->SetGuardState(EAIState::chasing);
@@ -150,7 +171,7 @@ void ALAIController::SoundCheck(float Distance)
 								</div>
 								<button class="accordion">Ai Guard code</button>
 								<div class="panel">
-										<pre><code>AALGuard::AALGuard()
+										<pre><code style="font-size:12px">AALGuard::AALGuard()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -233,7 +254,8 @@ bool AALGuard::CanISeePlayer(FVector PlayerPos)
 		return false;
 }
 
-void AALGuard::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+void AALGuard::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,
+ AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
 		CanHearPlayer = true;
@@ -362,9 +384,8 @@ void AALGuard::EndSlow()
 								<p>The main interactable was the common red barrel. The player has a projectile which when hitting a barrel directly would cause an explosion but when hitting something else would cause a small black hole to appear that pulls objects towards it.  If a barrel was caught in the black hole effect it would spill out oil on the floor. If the player then walks through the oil, they gain the oily status. Which for game feel makes the player move faster with more sliding movement, but gameplaywise makes the player able to traverse through tight spaces. </p>
 								<button class="accordion">Oil Barrel code</button>
 								<div class="panel">
-								<pre><code>AALOilBarrel::AALOilBarrel()
+								<pre><code style="font-size:12px">AALOilBarrel::AALOilBarrel()
 {
-	
 	BarrelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BarrelMesh"));
 	BarrelMesh->SetupAttachment(RootComponent);
 
@@ -383,28 +404,24 @@ void AALOilBarrel::BeginPlay()
 	LineTraceCollisionQueryParams.AddIgnoredActor(this);
 }
 
-void AALOilBarrel::ExploadOnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AALOilBarrel::ExploadOnHit(UPrimitiveComponent* HitComponent,
+ AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-
 	if (AALProjectile* Projectile = Cast<AALProjectile>(OtherActor))
 	{
-
 		if (Projectile->IsExploding)
 		{
 			Expload();
 			return;
 		}
 	
-
 	}
 	else if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
 	{
-		
 		return;
 	}
 	else if (!IsEmpty && OtherActor->ActorHasTag(FName("Floor")))
 	{
-		
 		SpawnOil();
 		IsEmpty = true;
 	}
@@ -421,7 +438,8 @@ void AALOilBarrel::SpawnOil()
 
 void AALOilBarrel::FindGround(FVector& GroundLocation, FRotator& GroundRotation)
 {
-	GetWorld()->LineTraceSingleByChannel(OilTrace, GetActorLocation(), GetActorLocation() + FVector(0, 0, -1) * 1000, ECC_WorldStatic, LineTraceCollisionQueryParams);
+	GetWorld()->LineTraceSingleByChannel(OilTrace, GetActorLocation(),
+	 GetActorLocation() + FVector(0, 0, -1) * 1000, ECC_WorldStatic, LineTraceCollisionQueryParams);
 	FName TagToLookFor = "Floor";
 	if (OilTrace.Actor == nullptr)
 	{

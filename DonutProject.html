@@ -45,10 +45,27 @@
 						<!-- Post -->
 							<section class="post">
 								<header class="major">
-									<span class="date">April 25, 2017</span>
-									<h1>Donout<br />
-									Project</h1>
-									<p>This was an introductory group project which I worked on at Future Games. It was used to introduce source control and group work dynamics. Additionally, it was also a good opportunity for me to put into practice what I had previously learned in UE4. In this project I worked on the jump mechanics as well as the game saving.</p>
+									<h1>Glaze of<br />
+									Glory</h1>
+									<div class="row gtr-50 gtr-uniform width=100%">
+											<div class="col-4">								
+												<p style="text-align:right;color:rgb(117,120,255);padding-left: 0px;margin-right: 180px">
+												Engine:<br>
+												Language:<br>
+												Development time:<br>
+												Team Size:
+												</p></div>
+											<div class="col-4">								
+												<p style="text-align:Left;margin-left: -190px">
+												Unreal Engine 4<br>
+												C++<br>
+												4 weeks<br>
+												5
+												</p></div>
+											<div class="col-4">								
+												<p style="margin-left: -400px;">This was an introductory group project which I worked on at Future Games. It was used to introduce source control and group work dynamics. Additionally, it was also a good opportunity for me to put into practice what I had previously learned in UE4. In this project I worked on the jump mechanics as well as the game saving. 
+												</p></div>
+									</div>
 								</header>
 								<div class="wrapper">
 									<div class="videowrapper">	
@@ -61,7 +78,7 @@
 								<p>The game was in need of a saving system to save high score, money and the equipment of the player. I took this upon myself as I Jave previously only done this in blueprint (drag and drop programming) and thought it could be good to translate that knowledge into C++. I encountered very few problems when creating this system, most of which stemmed from my inexperience within the engine, the biggest problem I had when developing this was that I was looking at the wrong place. I was certain that the fault laid in the saving and loading function when it in fact was the variables where I saved my score that wasn’t of the right type.</p>
 								<button class="accordion">Code snipet</button>
 								<div class="panel">
-								<pre><code>
+								<pre><code style="font-size:12px">
 void USavedGameDataManager::LoadGame()
 {
 	if (UGameplayStatics::DoesSaveGameExist("testing", 0))
@@ -100,7 +117,7 @@ void USavedGameDataManager::SaveGame()
 								<p>The game was in need of air maneuvering system to fight enemies and give the player an easier time to move in the level. As I’ve had my experience of managing movement in blueprint, I thought that this would be a good idea to move over to C++ and try it there as well. The jet pack and its functions were easy enough to finish, so I decided to try to spice it up by adding a fueling system that dictate when and how much the jet pack could be used. </p>
 								<button class="accordion">Code snipet</button>
 								<div class="panel">
-								<pre><code>
+								<pre><code style="font-size:12px">
 void ACppDonutCharacter::JetPack()
 {
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
