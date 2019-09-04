@@ -2623,6 +2623,12 @@ input, select, textarea {
 			margin: 2.5rem 0;
 			width: 100%;
 		}
+		.image.fit2 {
+			display: block;
+			margin: 2.5rem 0;
+			width: 100%;
+			height: 100px;
+		}
 
 			.image.fit:first-child {
 				margin-top: 0;
