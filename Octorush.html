@@ -34,8 +34,9 @@
 						<li class="active"><a href="DonutProject.html">Octorush</a></li>
 						</ul>
 						<ul class="icons">
-							<li><a href="www.linkedin.com/in/oscar-wiberg-30b557178" class="icon brands fa-linkedin"><span class="label">linkedin</span></a></li>
-							<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+							<li><a href="https://linkedin.com/in/oscar-wiberg-30b557178" class="icon brands fa-linkedin"><span class="label">linkedin</span></a></li>
+							<li><a href="https://github.com/R083rto" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+							<li><a href="#" class="button primary fit">CV</a></li>
 						</ul>
 					</nav>
 
@@ -79,7 +80,7 @@
 								<p>The scraped AI was supposed to patrol until it saw or heard the player at which point it would chase them down until it came close enough where it would stop for a moment before rapidly throwing itself towards the player. </p>
 								<button class="accordion">AI Controller code</button>
 								<div class="panel">
-								<pre><code style="font-size:12px">ALAIController::ALAIController()
+								<pre><code class="prettyprint" style="font-size:12px">ALAIController::ALAIController()
 {
 	LineTraceCollisionQueryParams = FCollisionQueryParams(SCENE_QUERY_STAT(LineTraceSingle), false);
 }
@@ -171,7 +172,7 @@ void ALAIController::SoundCheck(float Distance)
 								</div>
 								<button class="accordion">Ai Guard code</button>
 								<div class="panel">
-										<pre><code style="font-size:12px">AALGuard::AALGuard()
+										<pre><code class="prettyprint" style="font-size:12px">AALGuard::AALGuard()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -384,7 +385,7 @@ void AALGuard::EndSlow()
 								<p>The main interactable was the common red barrel. The player has a projectile which when hitting a barrel directly would cause an explosion but when hitting something else would cause a small black hole to appear that pulls objects towards it.  If a barrel was caught in the black hole effect it would spill out oil on the floor. If the player then walks through the oil, they gain the oily status. Which for game feel makes the player move faster with more sliding movement, but gameplaywise makes the player able to traverse through tight spaces. </p>
 								<button class="accordion">Oil Barrel code</button>
 								<div class="panel">
-								<pre><code style="font-size:12px">AALOilBarrel::AALOilBarrel()
+								<pre><code class="prettyprint" style="font-size:12px">AALOilBarrel::AALOilBarrel()
 {
 	BarrelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BarrelMesh"));
 	BarrelMesh->SetupAttachment(RootComponent);
@@ -479,6 +480,7 @@ void AALOilBarrel::FindGround(FVector& GroundLocation, FRotator& GroundRotation)
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+			<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
 			<script>
 				var acc = document.getElementsByClassName("accordion");
 				var i;
