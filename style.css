@@ -29,7 +29,7 @@
 }
 
 .active, .accordion:hover {
-  background-color: #777;
+  background-color: #ccc;
 }
 
 .accordion:after {
