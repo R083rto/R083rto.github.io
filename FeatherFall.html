@@ -64,7 +64,17 @@
 											<div>
 												<p>AI system that caused the first Enemies to arrive to surround the player up close while all the others are to encircle around its target when there is no space up close. </p>
 											</div>
-											<a href="#" class="image fit"><img src="images/featherfallAIs.gif" alt="" style="height: 400px; width:400px;"/></a>
+											<div class="box alt">
+													<div class="row gtr-50 gtr-uniform">
+															<div class="col-4"></div>
+														<div class="col-4">
+																				<video width="100%" height="auto"  autoplay loop muted>
+																						<source src="images/encircle.mp4" type="video/mp4">
+																							<p>Ops, your browser can't display this</p>
+																				</video>
+																	</div>
+																	<div class="col-4"></div>
+													</div>
 											
 										</div>
 										<header>
@@ -72,8 +82,167 @@
 										</header>
 								<button class="accordion">Code snipet</button>
 								<div class="panel">
-								<pre><code class="prettyprint">
-here lies an empty row
+								<pre><code class="prettyprint"style="font-size:12px">
+public class MoveAround : MonoBehaviour
+{
+    public int segments = 10;
+    public float innerRadius = 2;
+    public float outerRadiusMin = 1.5f;
+    public float outerRadiusMax = 10f;
+
+    float deltaTheta;
+    Vector3 targetLocation;
+    
+    bool isInPlayMode = false;
+
+    float rotationTimer;
+    public List<GameObject> enemy = new List<GameObject>();
+
+    private void Start()
+    {
+        targetLocation = transform.position;
+        deltaTheta = (2 * Mathf.PI) / segments;
+        isInPlayMode = true;
+    }
+
+    private void Update()
+    {
+        rotationTimer += Time.deltaTime;
+        targetLocation = transform.position;
+        
+        for(int i = 0; i < enemy.Count; i++)
+        {
+            if (i < segments)
+            {
+                SendAiToInnerPositionDependentOnIndex(i);
+            }
+            else
+                SendAiToOuterPositionDependantOnIndex(i);
+        }
+    }
+
+    Vector3 GetPositionAroundPlayer(int index, float extraRadius, bool shouldRotate = false)
+    {
+        float theta = deltaTheta * index;
+
+        if (!shouldRotate)
+            return targetLocation + new Vector3((innerRadius + extraRadius) * 
+                Mathf.Cos(theta),
+                0f,
+                (innerRadius + extraRadius) * Mathf.Sin(theta));
+        else
+            return targetLocation + new Vector3((innerRadius + extraRadius) * 
+                Mathf.Cos(rotationTimer + index) * Random.Range(outerRadiusMin, outerRadiusMax),
+                0f, 
+                (innerRadius + extraRadius) * Mathf.Sin(rotationTimer + index) * Random.Range(outerRadiusMin, outerRadiusMax));
+    }
+    
+    void SendAiToPosition()
+    {
+        for(int i = 0;i < segments;i++)
+        {
+            float smalestdistance = Mathf.Infinity;
+            Vector3 target = Vector3.zero;
+            
+
+            if (!enemy[i].activeInHierarchy)
+            {
+                GameObject tmp = enemy[i];
+                enemy[i] = enemy[enemy.Count - 1];
+                enemy[enemy.Count - 1] = tmp;
+                enemy.RemoveAt(enemy.Count - 1);
+            }
+
+            for (int y = 0; y < segments; y++)
+            {
+                if (!enemy[i])
+                    continue;
+
+                Vector3 distance = enemy[i].transform.position - GetPositionAroundPlayer(i,0);
+
+                if(distance.sqrMagnitude < smalestdistance)
+                {
+                    smalestdistance = distance.sqrMagnitude;
+                    target = GetPositionAroundPlayer(i, 0);
+                }
+            }
+            
+            enemy[i].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(target);
+        }
+        if(segments < enemy.Count)
+        {
+            for(int i = segments; i < enemy.Count; i++)
+            {
+                enemy[i].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(GetPositionAroundPlayer(i-segments,0,true));
+            }
+        }
+    }
+    void SendAiToOuterPositionDependantOnIndex(int index)
+    {
+        enemy[index].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(GetPositionAroundPlayer(index - segments, 0, true));
+    }
+
+    void SendAiToInnerPositionDependentOnIndex(int index)
+    {
+        float smalestdistance = Mathf.Infinity;
+        Vector3 target = Vector3.zero;
+
+        int targetIndex = 0;
+
+        if (!enemy[index].activeInHierarchy)
+        {
+            GameObject tmp = enemy[index];
+            enemy[index] = enemy[enemy.Count - 1];
+            enemy[enemy.Count - 1] = tmp;
+            enemy.RemoveAt(enemy.Count - 1);
+        }
+
+        for (int y = 0; y < segments; y++)
+        {
+            if (!enemy[index])
+                continue;
+
+            Vector3 distance = enemy[index].transform.position - GetPositionAroundPlayer(index, 0);
+
+            if (distance.sqrMagnitude < smalestdistance)
+            {
+                smalestdistance = distance.sqrMagnitude;
+                target = GetPositionAroundPlayer(index, 0);
+                targetIndex = y;
+            }
+        }
+
+        enemy[index].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(target);
+          
+    }
+
+    void CircularPos()
+    {
+        float theta = 0;
+        for(int i = 0; i < enemy.Count; i++)
+        {
+            Vector3 segPos = targetLocation + new Vector3(innerRadius * Mathf.Cos(theta), 0f, innerRadius * Mathf.Sin(theta));
+            enemy[i].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(segPos);
+            theta += deltaTheta;
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!isInPlayMode)
+            return;
+        for(int i = 0; i < segments; i++)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawSphere(GetPositionAroundPlayer(i,0),0.2f);
+
+        }
+        Gizmos.color = Color.blue;
+		Gizmos.DrawLine(gameObject.transform.position + 
+		new Vector3(0, 0, innerRadius*outerRadiusMin), gameObject.transform.position + 
+		new Vector3(0, 0, innerRadius * outerRadiusMax));
+    }
+}
 								</code></pre>
 								</div>
 								<header class="minor">
