@@ -64,23 +64,23 @@
 											<div>
 												<p>AI system that caused the first Enemies to arrive to surround the player up close while all the others are to encircle around its target when there is no space up close. </p>
 											</div>
-											<div class="box alt">
+										    <div class="box alt">
 													<div class="row gtr-50 gtr-uniform">
-															<div class="col-4"></div>
+														<div class="col-4"></div>
 														<div class="col-4">
-																				<video width="100%" height="auto"  autoplay loop muted>
-																						<source src="images/encircle.mp4" type="video/mp4">
-																							<p>Ops, your browser can't display this</p>
-																				</video>
-																	</div>
-																	<div class="col-4"></div>
+                                                            <video width="100%" height="auto"  autoplay loop muted>
+                                                                    <source src="images/encircle.mp4" type="video/mp4">
+                                                                    <p>Ops, your browser can't display this</p>
+                                                            </video>
+														</div>
+														<div class="col-4"></div>
 													</div>
-											
+										    </div>
 										</div>
 										<header>
 											<p></p>
 										</header>
-								<button class="accordion">Code snipet</button>
+								<button class="accordion">Ai aggresive behavior</button>
 								<div class="panel">
 								<pre><code class="prettyprint"style="font-size:12px">
 public class MoveAround : MonoBehaviour
@@ -96,7 +96,7 @@ public class MoveAround : MonoBehaviour
     bool isInPlayMode = false;
 
     float rotationTimer;
-    public List<GameObject> enemy = new List<GameObject>();
+    public List&ltGameObject> enemy = new List&ltGameObject>();
 
     private void Start()
     {
@@ -167,19 +167,19 @@ public class MoveAround : MonoBehaviour
                 }
             }
             
-            enemy[i].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(target);
+            enemy[i].GetComponent&ltUnityEngine.AI.NavMeshAgent>().SetDestination(target);
         }
         if(segments &lt enemy.Count)
         {
             for(int i = segments; i &lt enemy.Count; i++)
             {
-                enemy[i].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(GetPositionAroundPlayer(i-segments,0,true));
+                enemy[i].GetComponent&ltUnityEngine.AI.NavMeshAgent>().SetDestination(GetPositionAroundPlayer(i-segments,0,true));
             }
         }
     }
     void SendAiToOuterPositionDependantOnIndex(int index)
     {
-        enemy[index].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(GetPositionAroundPlayer(index - segments, 0, true));
+        enemy[index].GetComponent&ltUnityEngine.AI.NavMeshAgent>().SetDestination(GetPositionAroundPlayer(index - segments, 0, true));
     }
 
     void SendAiToInnerPositionDependentOnIndex(int index)
@@ -212,7 +212,7 @@ public class MoveAround : MonoBehaviour
             }
         }
 
-        enemy[index].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(target);
+        enemy[index].GetComponent&ltUnityEngine.AI.NavMeshAgent>().SetDestination(target);
           
     }
 
@@ -222,7 +222,7 @@ public class MoveAround : MonoBehaviour
         for(int i = 0; i &lt enemy.Count; i++)
         {
             Vector3 segPos = targetLocation + new Vector3(innerRadius * Mathf.Cos(theta), 0f, innerRadius * Mathf.Sin(theta));
-            enemy[i].GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(segPos);
+            enemy[i].GetComponent&ltUnityEngine.AI.NavMeshAgent>().SetDestination(segPos);
             theta += deltaTheta;
         }
     }
@@ -245,17 +245,336 @@ public class MoveAround : MonoBehaviour
 }
 								</code></pre>
 								</div>
-								<header class="minor">
-										<H2>Placeholder headlineg</H2>
-										</header>
-								<p>placeholder text</p>
-								<button class="accordion">Code snipet</button>
+								<p>I also maade a Ai resource gathering behavior that makes them look for food, water and a place to rest. When they had gathered enough, they wander randomly. This got cut before the combat was implemented as we moved the game in a different direction. </p>
+                                <div class="box alt">
+                                        <div class="row gtr-50 gtr-uniform">
+                                            <div class="col-3"></div>
+                                            <div class="col-6">
+                                                <video width="100%" height="auto"  autoplay loop muted>
+                                                    <source src="images/featherfallAIIdle.mp4" type="video/mp4">
+                                                    <p>Ops, your browser can't display this</p>
+                                                </video>
+                                            </div>
+                                            <div class="col-3"></div>
+                                        </div>
+                                    </div>
+                                <p>When I was working on the Resource gathering, I also experimented a lot with behavior trees in unity using thier animator as a stand in for the fact that they don't have an actual behavior tree. This was something I later used in the project to help and apply animations in the game. </p>
+                                <article>
+                                        <span class="image fit"><img src="images/BT.JPG" alt="" /></span>
+                                    </article>
+                                <button class="accordion">Ai resource gathering behavior</button>
 								<div class="panel">
-								<pre><code class="prettyprint">
-code her plz
+								<pre><code class="prettyprint"style="font-size:12px">
+public bool CanSeePlayer = false;
+
+
+    //Placeholder point of interest
+    [Tooltip("Position for resource")] public Transform nestPosition;
+    [Tooltip("Position for resource")] public Transform foodPosition;
+    [Tooltip("Position for resource")] public Transform waterPosition;
+
+    private UnityEngine.AI.NavMeshAgent navMeshAgent;
+    private Animator animator;
+    private Vector3 targetPosition;
+    private float currentDistance;
+
+    [Tooltip("max distance for random walking")]public float distance;
+
+    [Tooltip("The time it takes for all the meters to decrease by one")]public float timer = 15f;
+    private float startTimer;
+    
+    [Tooltip("animal internal resources, used in determining behavior")] [Range(1, 10)] public int sleepMeter = 10;
+    [Tooltip("animal internal resources, used in determining behavior")] [Range(1, 10)] public int foodMeter = 10;
+    [Tooltip("animal internal resources, used in determining behavior")] [Range(1, 10)] public int waterMeter = 10;
+
+    [System.NonSerialized]public IdleState animalState = IdleState.Hungry;
+    
+    public enum IdleState  
+    {
+        None,
+        Hungry,
+        Thirsty,
+        Sleepy,
+    };
+
+    public void SetState(IdleState state)
+    {
+        if (sleepMeter == 10 && foodMeter == 10 && waterMeter == 10)
+        {
+            animalState = IdleState.None;
+            return;
+        }
+        else
+            animalState = state;
+    }
+
+    public IdleState CheckState()
+    {
+        switch (animalState)
+        {
+            case IdleState.Hungry:
+                if (foodMeter != 10)
+                    break;
+                else if (waterMeter &lt 5)
+                    animalState = IdleState.Thirsty;
+                else if (sleepMeter &lt 5)
+                    animalState = IdleState.Sleepy;
+                else
+                    animalState = IdleState.None;
+                break;
+            case IdleState.Thirsty:
+                if (waterMeter != 10)
+                    break;
+                else if (foodMeter &lt 5)
+                    animalState = IdleState.Hungry;
+                else if (sleepMeter &lt 5)
+                    animalState = IdleState.Sleepy;
+                else
+                    animalState = IdleState.None;
+                break;
+            case IdleState.Sleepy:
+                if (sleepMeter != 10)
+                    break;
+                else if (waterMeter &lt 5)
+                    animalState = IdleState.Thirsty;
+                else if (foodMeter &lt 5)
+                    animalState = IdleState.Hungry;
+                else
+                    animalState = IdleState.None;
+                break;
+            case IdleState.None:
+                if (foodMeter &lt 5)
+                    animalState = IdleState.Hungry;
+                else if (sleepMeter &lt 5)
+                    animalState = IdleState.Sleepy;
+                else if (waterMeter &lt5)
+                    animalState = IdleState.Thirsty;
+                else
+                    animalState = IdleState.None;
+                break;
+        }
+        return animalState;
+    }
+
+    private void Awake()
+    {
+        animator = gameObject.GetComponent&ltAnimator>();
+        navMeshAgent = gameObject.GetComponent&ltUnityEngine.AI.NavMeshAgent>();
+
+        
+    }
+    
+    void FixedUpdate()
+    {
+        // decramenting resources
+        startTimer += Time.deltaTime;
+        if(startTimer > timer)
+        {
+            foodMeter--;
+            waterMeter--;
+            sleepMeter--;
+
+           foodMeter = Mathf.Clamp(foodMeter, 1, 10);
+           waterMeter = Mathf.Clamp(waterMeter, 1, 10);
+           sleepMeter = Mathf.Clamp(sleepMeter, 1, 10);
+
+            startTimer = 0f;
+        }
+
+        // check idle state distance
+        switch(CheckState())
+        {
+            case IdleState.Hungry:
+                targetPosition = foodPosition.position;
+                break;
+            case IdleState.Sleepy:
+                targetPosition = nestPosition.position;
+                break;
+            case IdleState.Thirsty:
+                targetPosition = waterPosition.position;
+                break;
+            default:
+                break;
+        }
+        currentDistance = Vector3.Distance(targetPosition, transform.position);
+        animator.SetFloat("DistanceToObjectiv", currentDistance);
+    }
+
+    public static Vector3 RandomNavSphere(Vector3 origin, float dist, int layermask)
+    {
+        Vector3 randDirection = Random.insideUnitSphere * dist;
+
+        randDirection += origin;
+
+        NavMeshHit navHit;
+
+        NavMesh.SamplePosition(randDirection, out navHit, dist, layermask);
+
+        return navHit.position;
+    }
+
+    public void GoToIdlePoint()
+    {
+        navMeshAgent.SetDestination(targetPosition);
+    }
+
+    public void GoToRandomPoint()
+    {
+        navMeshAgent.SetDestination(RandomNavSphere(transform.position,distance,-1));
+    }
 								</code></pre>
-							
-								</div>
+                                
+                                </div>
+                                <header class="minor">
+										<H2>Camera</H2>
+                                        </header>
+                                        <p>I made two Camera functions. A Lock on that would follow a target and allowed for cycling in between them, and a zoom. Both where cut. </p>
+                                        <div class="box alt">
+                                                <div class="row gtr-50 gtr-uniform">
+                                                    <div class="col-3"></div>
+                                                    <div class="col-6">
+                                                        <video width="100%" height="auto"  autoplay loop muted>
+                                                            <source src="images/CameraTarget.mp4" type="video/mp4">
+                                                            <p>Ops, your browser can't display this</p>
+                                                        </video>
+                                                    </div>
+                                                    <div class="col-3"></div>
+                                                </div>
+                                            </div>
+                                        <button class="accordion">Camera code</button>
+                                        <div class="panel">
+                                        <pre><code class="prettyprint"style="font-size:12px">void Update()
+    {
+        if(Input.GetMouseButtonDown(2))
+        {
+            isZoomed = !isZoomed;
+        }
+        if(Input.GetMouseButtonUp(2))
+        {
+            isZoomed = false;
+        }
+
+        if (isZoomed)
+        {
+            GetComponent&ltCamera>().fieldOfView = Mathf.Lerp(GetComponent&ltCamera>().fieldOfView, zoom, Time.deltaTime * smoth);
+        }
+        else
+        {
+            GetComponent&ltCamera>().fieldOfView = Mathf.Lerp(GetComponent&ltCamera>().fieldOfView, startZoom, Time.deltaTime * smoth);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            isInTargetmode = !isInTargetmode;
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            isLookingForNewTarget = true;
+            toggleEnemyDir = 1;
+        }
+
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            isLookingForNewTarget = true;
+            toggleEnemyDir = -1;
+        }
+
+        if(isInTargetmode)
+        {
+            //check what enemies that are in range
+            if(LockOnTargets.Count == 0)
+            {
+                Collider[] colArrr = Physics.OverlapSphere(transform.position, range, lockOnLayer);
+                LockOnTargets = new List&ltCollider>(colArrr);
+            }
+            else
+            {
+                Collider[] colArr = Physics.OverlapSphere(transform.position, range, lockOnLayer); 
+                foreach(Collider c in colArr)
+                {
+                    if (!LockOnTargets.Contains(c))
+                        LockOnTargets.Add(c);
+                }
+                LockOnTargets.RemoveAll(item => !new List&ltCollider>(colArr).Contains(item));
+            }
+
+            // lock on to closest one
+            if (LockOnTargets.Count > 0)
+            {
+                if(!targetEnemy)
+                {
+                    targetEnemy = LockOnTargets[0];
+                    foreach (Collider c in LockOnTargets)
+                    {
+                        if (Vector3.Distance(c.transform.position, transform.position) <
+                            Vector3.Distance(targetEnemy.transform.position, transform.position))
+                        {
+                            targetEnemy = c;
+                        }
+                    }
+                }
+
+                //cycle target to lock on to another "random" target
+                if (isLookingForNewTarget && LockOnTargets.Count >1)
+                {
+                    LockOnTargets.Remove(targetEnemy);
+                    float dotComparing = 0f;
+                    Collider nextTargetEnemy = null;
+                    for(int i = 0; i&lt LockOnTargets.Count; i++)
+                    {
+                        if (LockOnTargets[i] == targetEnemy)
+                            continue;
+
+                        Vector3 currentLookDir = transform.forward;
+                        Vector3 nextLookDir = (transform.position - LockOnTargets[i].transform.position).normalized;
+                        Vector3 rightVector = transform.right * toggleEnemyDir;
+
+
+                        if(Vector3.Dot(rightVector, nextLookDir) > 0)
+                        {
+                            float enemyDotResult = Vector3.Dot(currentLookDir, nextLookDir);
+                            if (enemyDotResult &lt dotComparing)
+                            {
+                                dotComparing = enemyDotResult;
+                                nextTargetEnemy = LockOnTargets[i];
+                            }
+                                
+                        }
+                    }
+                    LockOnTargets.Add(targetEnemy);
+                    targetEnemy = nextTargetEnemy;
+                    isLookingForNewTarget = false;
+                }
+            }
+            //adjust camera toward target
+            relPos = targetEnemy.transform.position - transform.position;
+            newRot = Quaternion.LookRotation(relPos);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, newRot, Time.deltaTime * speed);
+        }
+        else
+        {
+            if(LockOnTargets != null)
+                LockOnTargets.Clear();
+            targetEnemy = null;
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, range);
+        if(targetEnemy)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(transform.position, transform.position + transform.right * toggleEnemyDir);
+
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(targetEnemy.transform.position, targetEnemy.transform.position + (targetEnemy.transform.position - targetEnemy.transform.position));
+        }
+    }
+}
+                                            </code></pre>
 							</section>
 
 					</div>
