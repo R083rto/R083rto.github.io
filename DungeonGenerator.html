@@ -1,0 +1,276 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Oscar Wibergs Portfolio</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		 
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		
+		<link rel="stylesheet" href="style.css" />
+		<noscript><link rel="stylesheet" href="style.css" /></noscript>
+	
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<a href="index.html" class="logo">Oscar Wiberg</a>
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+						<li><a href="index.html">Back</a></li>
+						<li class="active"><a href="DonutProject.html">Dungeon Generator</a></li>
+						</ul>
+						<ul class="icons">
+							<li><a href="https://linkedin.com/in/oscar-wiberg-30b557178" class="icon brands fa-linkedin"><span class="label">linkedin</span></a></li>
+							<li><a href="https://github.com/R083rto" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+							<li><a href="images/resume.pdf" class="button primary fit">CV</a></li>
+						</ul>
+					</nav>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Post -->
+							<section class="post">
+								<header class="major">
+									<h1> 
+										Dungeon Generator
+									</h1>
+									<p>This was a one-week project where I created a Dungeon level generator inspired by the likes of roguelikes such as Angbad. This was done using Lua in the IDE Zerobrane. Both of which I have 0 previous experience with. </p>
+								</header>
+								<p>While working on this project the first day just consisted of me hammering down Lua and Zero brane basics. </p>
+								<button class="accordion">Extream beginer Lua test code</button>
+								<div class="panel">
+								<pre><code class="prettyprint" style="font-size:12px">
+print("Hello, World!")						
+								</code></pre>
+								</div>
+								<p></p>
+								<header class="minor">
+										<H3>The Gridsystem</H3>
+										</header>
+								<p>The next couple days I created a grid that contained nothing but walls. From there a room was generated, then a bunch of rooms at random positions, then the rooms hade spacing for the corridors to move between them, then a start and end room was made, and finally the rooms got doors. The biggest challenge in this part was the fact that tables, which is the Lua equitant of the all so common array, start at 1 by default. </p>
+								<article>
+                                        <span class="image fit"><img src="images/noCorridors.JPG" alt="" /></span>
+                                </article>
+								<button class="accordion">Generate Rooms on grid</button>
+								<div class="panel">
+								<pre><code class="prettyprint" style="font-size:12px">
+function GenerateRoomsOnGrid()
+  currentAmountOfRooms = 0;
+  failedRoommTries = 0;
+
+  while(currentAmountOfRooms &lt roomAmount and failedRoommTries &lt roomRetry) do
+    
+    newRoomY = math.random(1 , #grid )
+    newRoomX = math.random(1 , #grid )
+    thisRoomWidth = math.random(roomMin,roomMax)
+    thisRoomHeigth = math.random(roomMin,roomMax)
+    
+    canMakeRoom = true;
+    if grid[newRoomY][newRoomX] ~= floor then
+      
+      for y = newRoomY - roomSpaceing, newRoomY + thisRoomHeigth + roomSpaceing do
+        for x = newRoomX - roomSpaceing, newRoomX + thisRoomWidth + roomSpaceing do
+          if y &lt 1 or y > #grid or x &lt 1 or x > #grid or grid[y][x] == floor then
+            canMakeRoom = false
+            failedRoommTries = failedRoommTries + 1
+            break
+          end
+        end
+        
+        if canMakeRoom == false then
+          break
+        end
+      end
+      
+      if canMakeRoom then
+        failedRoommTries = 0
+        
+        for y = newRoomY, newRoomY + thisRoomHeigth do
+          for x = newRoomX, newRoomX + thisRoomWidth do
+              grid[y][x] = floor
+          end
+        end
+        
+        randomizer = math.random(0,1)
+        if randomizer > 0.5  then
+          doorPointVerticalWall = math.random(newRoomY, newRoomY + thisRoomHeigth)
+          grid[doorPointVerticalWall][newRoomX-1] = door
+        else
+          doorPointVerticalWall = math.random(newRoomY, newRoomY + thisRoomHeigth)
+          grid[doorPointVerticalWall][newRoomX+thisRoomWidth+1] = door
+        end
+        
+        randomizer = math.random(0,1)
+        if randomizer > 0.5  then
+          doorPointHorizontalWall = math.random(newRoomX, newRoomX + thisRoomWidth)
+          grid[newRoomY-1][doorPointHorizontalWall] = door
+        else
+          doorPointHorizontalWall = math.random(newRoomX, newRoomX + thisRoomWidth)
+          grid[newRoomY+thisRoomHeigth+1][doorPointHorizontalWall] = door
+        end
+        currentAmountOfRooms = currentAmountOfRooms+1;
+        
+      end
+    end
+  end
+end						
+								</code></pre>
+								</div>
+								<p></p>
+								<header class="minor">
+										<H3>Corridors</H3>
+										</header>
+								<p>The last 4 days got spent on figuring out the corridors as well as cleaning up the code. When it came to make the corridors work, I ended up with a solution that uses dijkstra's algorithm from the start room to find every other door. This creates a kind of snaking effect where the corridors move between all the rooms becoming one big corridor leading to all the rooms. Looking like this: </p>
+								<article>
+                                        <span class="image fit"><img src="images/fullmap.JPG" alt="" /></span>
+                                </article>
+								<p>One of the especially hard things for me to figure out was how to use the Lua tables that function as hash maps, lists and arrays at the same time to make the, frontier, and came from lists of the dijkstra's algorithm work properly</p>
+								
+								<button class="accordion">Generate Corridors From Start</button>
+								<div class="panel">
+								<pre><code class="prettyprint" style="font-size:12px">
+function GenerateCorridorsFromStart()
+  
+  frontier[1] = AddToList(doorList[1].Y , doorList[1].X, nil)
+  table.insert(cameFrom, frontier[1])
+  while frontier[1] ~= nil do
+    currentIndex = 0
+    for i = 1, #cameFrom do
+      if cameFrom[i].X == frontier[1].X and cameFrom[i].Y == frontier[1].Y then
+        currentIndex = i
+        break
+      end
+    end
+    table.remove(frontier,1)
+    current = cameFrom[currentIndex]
+    CheckGridPositionOntoTables(current.Y-1,current.X, currentIndex)
+    CheckGridPositionOntoTables(current.Y+1,current.X, currentIndex)
+    CheckGridPositionOntoTables(current.Y,current.X-1, currentIndex)
+    CheckGridPositionOntoTables(current.Y,current.X+1, currentIndex)
+  end
+  
+  for i = 2, #doorList do
+    aDoorPos = nil
+    for j = 1, #cameFrom do
+      if doorList[i].X == cameFrom[j].X and doorList[i].Y == cameFrom[j].Y then
+        aDoorPos = cameFrom[j]
+        break
+      end
+    end
+    
+    local l = cameFrom[aDoorPos.Previous]
+    while l.Previous do
+      grid[l.Y][l.X] = floor
+      l = cameFrom[l.Previous]
+    end
+  end
+end						
+								</code></pre>
+								</div>
+								<p></p>
+								<button class="accordion">Check Grid Position On Tables</button>
+								<div class="panel">
+								<pre><code class="prettyprint" style="font-size:12px">
+function CheckGridPositionOnTables(y, x, index)
+  
+  if IsAPossiblePositon(x, y) then
+    table.insert(frontier, AddToList(y, x, index))
+    table.insert(cameFrom, AddToList(y, x, index))
+    if grid[y][x] == door then
+      table.insert(doorList, AddToList(y,x,index)) 
+    end
+  end
+end					
+								</code></pre>
+								</div>
+								<p></p>
+								<button class="accordion">Is a posible position</button>
+								<div class="panel">
+								<pre><code class="prettyprint" style="font-size:12px">
+function IsAPossiblePositon(x,y)
+
+  for i = 1, #cameFrom do
+    
+    if cameFrom[i].X == x and cameFrom[i].Y == y then
+      return false
+    end
+  end
+  
+  if grid[y][x] == door then return true end
+
+  for Y = -1, 1 do
+    for X = -1, 1 do
+      if x +X > #grid or x+X < 1 or y+Y > #grid or y+Y < 1 then 
+        return false 
+      elseif grid[y + Y][x + X] == floor then 
+        return false 
+      end
+    end
+  end
+  return true
+end						
+								</code></pre>
+								</div>
+								<p></p>
+								<header class="minor">
+										<H3>The Aftermath</H3>
+										</header>
+								<p>In the end I would like to improve how the corridors are generated by doing them in one batch instead of one by one as it is the slowest process of the script. I would also improve the code cleanliness by adding a bit more spacing and removing redundant comments to dampen the moments where you hit a brick wall of code. But as a pretty novice programmer this project was a ton of fun. Mainly because I didn’t follow any online tutorials or guides about anything and I got to use a couple of things that I hadn't ever really used before but always known how to operate like, 2d arrays, and linked lists. But I also got to work with completely new algorithms which I had to make proper research for like Dijkstra’s. </p>
+							</section>
+
+					</div>
+
+
+				<!-- Copyright -->
+					<div id="copyright">
+						<ul><li>&copy; Untitled</li><li>Design: <a href="https://html5up.net">HTML5 UP</a></li></ul>
+					</div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+			<script>
+				var acc = document.getElementsByClassName("accordion");
+				var i;
+
+				for (i = 0; i < acc.length; i++) {
+				acc[i].addEventListener("click", function() {
+					this.classList.toggle("active");
+					var panel = this.nextElementSibling;
+					if (panel.style.maxHeight){
+					panel.style.maxHeight = null;
+					} else {
+					panel.style.maxHeight = panel.scrollHeight + "px";
+					} 
+				});
+				}
+			</script>
+
+	</body>
+
+
+
+</html>
