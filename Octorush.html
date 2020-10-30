@@ -70,7 +70,7 @@ void ALAIController::Tick(float Delattime)
 {
 	Super::Tick(Delattime);
 	float Distance = (PlayerPawn->GetActorLocation() - ControlledPawn->GetActorLocation()).Size();
-	UCharacterMovementComponent* MovementComp = Cast<UCharacterMovementComponent>(ControlledPawn->GetMovementComponent());
+	UCharacterMovementComponent* MovementComp = Cast&ltUCharacterMovementComponent>(ControlledPawn->GetMovementComponent());
 
 	if (ControlledPawn->GetGuardState() == EAIState::idle || ControlledPawn->GetGuardState() == EAIState::sleep)
 	{
@@ -99,8 +99,8 @@ void ALAIController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	ControlledPawn = Cast<AALGuard>(GetPawn());
-	PlayerPawn = Cast<AALCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	ControlledPawn = Cast&ltAALGuard>(GetPawn());
+	PlayerPawn = Cast&ltAALCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	
 	LineTraceCollisionQueryParams.AddIgnoredActor(ControlledPawn);
 }
@@ -130,9 +130,9 @@ void ALAIController::SoundCheck(float Distance)
 {
 	if (ControlledPawn->GetIfCanHearPlayer())
 	{
-		if (PlayerPawn->FindComponentByClass<UALRadioactiveAbilityComponent>() != nullptr)
+		if (PlayerPawn->FindComponentByClass&ltUALRadioactiveAbilityComponent>() != nullptr)
 		{
-			if (PlayerPawn->FindComponentByClass<UALRadioactiveAbilityComponent>()->IsOn == true)
+			if (PlayerPawn->FindComponentByClass&ltUALRadioactiveAbilityComponent>()->IsOn == true)
 			{
 				ControlledPawn->TurnTowardsPlayer(PlayerPawn->GetActorLocation());
 				return;
@@ -157,7 +157,7 @@ void ALAIController::SoundCheck(float Distance)
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	SensingSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sensing Sphere"));
+	SensingSphere = CreateDefaultSubobject&ltUSphereComponent>(TEXT("Sensing Sphere"));
 	SensingSphere->SetSphereRadius(96);
 	SensingSphere->SetupAttachment(RootComponent);
 
@@ -239,13 +239,13 @@ bool AALGuard::CanISeePlayer(FVector PlayerPos)
 void AALGuard::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,
  AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
+	if (AALCharacter* Player = Cast&ltAALCharacter>(OtherActor))
 		CanHearPlayer = true;
 }
 
 void AALGuard::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (AALCharacter* Player = Cast<AALCharacter>(OtherActor))
+	if (AALCharacter* Player = Cast&ltAALCharacter>(OtherActor))
 		CanHearPlayer = false;
 }
 

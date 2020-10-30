@@ -1,0 +1,1026 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Oscar Wibergs Portfolio</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		 
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		
+		<link rel="stylesheet" href="style.css" />
+		<noscript><link rel="stylesheet" href="style.css" /></noscript>
+	
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<a href="index.html" class="logo">Oscar Wiberg</a>
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+						<li><a href="index.html">Back</a></li>
+						<li class="active"><a href="Transient.html">Transient</a></li>
+						</ul>
+						<ul class="icons">
+							<li><a href="https://linkedin.com/in/oscar-wiberg-30b557178" class="icon brands fa-linkedin"><span class="label">linkedin</span></a></li>
+							<li><a href="https://github.com/R083rto" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+							<li><a href="images/resume.pdf" class="button primary fit">CV</a></li>
+						</ul>
+					</nav>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Post -->
+							<section class="post">
+								<header class="major">
+									<h1> 
+										Transient
+									</h1>
+								<p>Transient is a horror game where you play as a little girl trying to get away from a shadowy figure that is lurking in her house. During this project, my team consisted of 10 people and was completed in 8 weeks all done remotely from home. The game was made in Unity, and my focus was on the AI character and its interactions with the player and world.
+									</p>
+								</header>
+								<div class="wrapper">
+									<div class="videowrapper">	
+										<iframe width="560" height="315" src="https://www.youtube.com/embed/1yVosrdHw2s" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+									</div>
+								</div>
+								<header class="minor">
+										<H2>AI State Machine</H2>
+										</header>
+										<div>
+											<div>
+                                                <p>The first variant of the AI was basically a big functional mess and could be described as a bunch of IF statements that checked enums.</p>
+                                                <p>
+                                                    As I worked on this it became apparent that this would become exponentially more difficult to work with whenever I want to add something new to it. The only problem with the implementation of a proper state machine was that I never had done it before. This would be the first time I would writ one and I worried that it could take too long to implement. In the end it took more time to implement then I had thought but in hindsight it was worth it as it allowed for future expansions on the system to be easily implemented.
+                                                    </p>
+											</div>
+										</div>
+								<button class="accordion">Enemy AI State</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public abstract class EnemyAIState
+{
+    protected EnemySystem system;
+
+    protected EnemyAIState(EnemySystem inSystem)
+    {
+        system = inSystem;
+    }
+
+    public virtual void Start()
+    {
+        return;
+    }
+
+    public virtual void Behaviour()
+    {
+        return;
+    }
+
+    public virtual void ReactToSound()
+    {
+        return;
+    }
+
+    public virtual void PlayerSpoted()
+    {
+        return;
+    }
+
+    public virtual void End()
+    {
+        return;
+    }
+}
+								</code></pre>
+                                </div>
+                                <button class="accordion">Enemy AI State Machine</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public class EnemyStateMachine : MonoBehaviour
+{
+    protected EnemyAIState state;
+    protected bool hasStartedStateBehaviour = false;
+    float stateChanges = 0;
+
+    public void SetState(EnemyAIState inState)
+    {
+        if (inState == state)
+        {
+            return;
+        }
+
+        if(state != null)
+        {
+            state.End();
+        }
+        state = inState;
+
+        stateChanges++;
+
+        state.Start();
+        hasStartedStateBehaviour = false;
+    }
+}
+								</code></pre>
+                                </div>
+                                <button class="accordion">Enemy System</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+    #region Initialization
+    private void Awake()
+    {
+        agent = GetComponent&ltNavMeshAgent>();
+        sencingComponent = new EnemySence(this);
+        interactingComponent = new EnemyInteract(this);
+        animator = GetComponentInChildren&ltEnemyAnimator>();
+        sfx = GetComponentInChildren&ltEnemySFX>();
+
+        soundListener = GetComponent&ltSoundListener>();
+        soundListener.detectedSound.AddListener(sencingComponent.CanHearPlayer);
+        if (player)
+        {
+            playerStates = player.GetComponent&ltPlayerStates>();
+            playerStats = player.GetComponent&ltPlayerStats>();
+            playerStates.onStateChanged.AddListener(PlayerStateChanged);
+            playerInput = player.GetComponent&ltPlayerInput>();
+        }
+
+        heardSoundEvent.AddListener(OnSoundHeard);
+
+    }
+
+    private void OnEnable()
+    {
+        InteractableDetector.interactableIsDetected += interactingComponent.ActPerObjectType;
+    }
+
+    private void OnDisable()
+    {
+        InteractableDetector.interactableIsDetected -= interactingComponent.ActPerObjectType;
+    }
+   
+    void Start()
+    {
+        lastPositionPlayerWasSpoted = transform.position;
+        SetState(new PatrolState(this));
+        AiCurrentState = state.ToString();
+    }
+    #endregion
+
+    private void Update()
+    {
+        AiCurrentState = state.ToString();
+        IsPlayerHiddenForTheAI = isPlayerSuccessfullyHidden.ToString();
+
+        state.Behaviour();
+
+        if(sencingComponent.CanSeePlayer())
+        {
+            PlayerSpoted();
+        }
+
+        if(outOfSightTickUp > 0)
+            outOfSightTickUp -= Time.deltaTime;
+
+        if(interactingComponent.canOpenADoor)
+        {
+            interactingComponent.OpenDoorInTheWay();
+        }
+    }
+
+    void PlayerStateChanged()
+    {
+        if(playerStates.PlayerState == State.Hide)
+        {
+            if(sencingComponent.CanSeePlayer())
+            {
+                isPlayerSuccessfullyHidden = false;
+                lastPositionPlayerWasSpoted = playerStats.hideExitPosForTheAI;
+            }
+            else
+            {
+                outOfSightTickUp = 0f;
+                isPlayerSuccessfullyHidden = true;
+            }
+        }
+    }
+
+    public void SetEyecolor(Color newEyeColor)
+    {
+        lEyeLight.color = newEyeColor;
+        rEyeLight.color = newEyeColor;
+    }
+
+    #region Trigger State actions
+    void PlayerSpoted()
+    {
+        outOfSightTickUp = outOfSigthTime;
+        lastPositionPlayerWasSpoted = transform.position;
+        state.PlayerSpoted();
+    }
+
+    void OnSoundHeard()
+    {
+        if (isPlayerSuccessfullyHidden)
+            return;
+
+        state.ReactToSound();
+    }
+    #endregion
+								</code></pre>
+								</div>
+                                <p> </p>
+                                <header class="minor">
+                                    <H3>Patrol State</H3>
+                                    </header>
+                                    <div>
+                                        <div>
+                                            <p>This was the default behavior and would just cause the AI to walk according to predetermined path made by designers.
+                                                </p>
+                                        </div>
+                                    </div>
+                                <button class="accordion">Patrol State</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public class PatrolState : EnemyAIState
+{
+    float waypointRange = 2f;
+
+    public PatrolState(EnemySystem inSystem) : base(inSystem)
+    {
+    }
+
+    public override void Start()
+    {
+        system.agent.speed = system.idleSpeed;
+        system.animator.SetIsRunning(system.agent.speed > system.idleSpeed);
+        system.SetEyecolor(system.idleColor);
+        system.behaviourState = EnemyState.idle;
+    }
+
+    public override void Behaviour()
+    {
+        if (system.waypointsData != null)
+        {
+            if (IsInRangeOfWaypoint(system.waypointsData.Waypoints[system.currentIndex]))
+            {
+                system.currentIndex++;
+                if (system.currentIndex > system.waypointsData.Waypoints.Length - 1)
+                {
+                    system.currentIndex = 0;
+                }
+            }
+            system.agent.SetDestination(system.waypointsData.Waypoints[system.currentIndex]);
+        }
+        system.sfx.PlayFootstep(State.Walk);
+        system.sfx.PlayMoan();
+    }
+
+    public override void ReactToSound()
+    {
+        system.lastPositionPlayerWasSpoted = system.sencingComponent.latestSoundPos;
+        system.SetState(new HuntState(system));
+    }
+
+    public override void PlayerSpoted()
+    {
+        system.lastPositionPlayerWasSpoted = system.player.transform.position;
+        system.SetState(new NoticePlayerState(system));
+        base.PlayerSpoted();
+    }
+
+    bool IsInRangeOfWaypoint(Vector3 waypoint)
+    {
+        Vector3 dif = system.transform.position - waypoint;
+
+        if (dif.sqrMagnitude &lt waypointRange * waypointRange)
+            return true;
+
+        return false;
+    }
+}
+								</code></pre>
+                                </div>
+                                <p> </p>
+                                <header class="minor">
+                                    <H3>Notice Player State</H3>
+                                    </header>
+                                    <div>
+                                        <div>
+                                            <p>The AI had a really easy time spotting the player. Our solution to this was to add some buffer time between the player being sported and being chased so that the player has time to hide again.</p>
+                                        </div>
+                                    </div>
+                                <button class="accordion">Notice Player State</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public class NoticePlayerState : EnemyAIState
+{
+    float timeBeforePlayerIsNoticed = 0f;
+
+    public NoticePlayerState(EnemySystem inSystem) : base(inSystem)
+    {
+    }
+
+    public override void Start()
+    {
+        system.agent.isStopped = true;
+        base.Start();
+    }
+
+    public override void Behaviour()
+    {
+        if(system.sencingComponent.CanSeePlayer())
+        {
+            system.agent.isStopped = true;
+            system.transform.LookAt(new Vector3(system.player.transform.position.x, system.transform.position.y, system.player.transform.position.z));
+            timeBeforePlayerIsNoticed += Time.deltaTime;
+            if(timeBeforePlayerIsNoticed >= system.noticeTime)
+            {
+                system.lastPositionPlayerWasSpoted = system.player.transform.position;
+
+                system.sfx.PlaySFX("Chase");
+                system.SetState(new ChaseState(system));
+            }
+        }
+        else
+        {
+            if (system.behaviourState == EnemyState.looking)
+                system.SetState(new PatrolState(system));
+            else
+                system.SetState(new HuntState(system));
+        }
+
+        base.Behaviour();
+    }
+
+    public override void End()
+    {
+        system.agent.isStopped = false;
+        base.End();
+    }
+}
+								</code></pre>
+                                </div>
+                                <p> </p>
+                                <header class="minor">
+                                    <H3>Chase State</H3>
+                                    </header>
+                                    <div>
+                                        <div>
+                                            <p>Isn't much to say about the chase state, once the player is spotted this will make the AI take chase. As this state relies on sight we initially had the problem of the AI giving up if the player ran around a corner, but after we made it able too track the player for a short duration when out of sight that was fixed. </p>
+                                            <div class="box alt">
+                                                <div class="row gtr-50 gtr-uniform">
+                                                    <div class="col-3"></div>
+                                                    <div class="col-6">
+                                                        <video width="100%" height="auto"  autoplay loop muted>
+                                                            <source src="images/Chase.mp4" type="video/mp4">
+                                                            <p>Ops, your browser can't display this</p>
+                                                        </video>
+                                                    </div>
+                                                    <div class="col-3"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <button class="accordion">Chase State</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public class ChaseState : EnemyAIState
+{
+    public ChaseState(EnemySystem inSystem) : base(inSystem)
+    {
+    }
+
+    public override void Start()
+    {
+        system.agent.speed = system.chaseSpeed;
+        system.animator.SetIsRunning(system.agent.speed > system.idleSpeed);
+        system.SetEyecolor(system.agrroColor);
+        system.behaviourState = EnemyState.chaseing;
+    }
+
+    public override void Behaviour()
+    {
+        system.agent.SetDestination(system.lastPositionPlayerWasSpoted);
+
+        if(CloseToPlayer())
+        {
+            system.SetState(new AttackState(system));
+        }
+
+        if(system.outOfSightTickUp &lt= 0 )
+        {
+            system.SetState(new HuntState(system));
+        }
+
+        system.sfx.PlayFootstep(State.Sprint);
+
+    }
+
+    public override void PlayerSpoted()
+    {
+        system.lastPositionPlayerWasSpoted = system.player.transform.position;
+        base.PlayerSpoted();
+    }
+
+    bool CloseToPlayer()
+    {
+        Vector3 diff = system.transform.position - system.lastPositionPlayerWasSpoted;
+        if (diff.sqrMagnitude &lt system.closeEnougth * system.closeEnougth)
+        {
+            return true;
+        }
+        else
+            return false;
+    }
+}
+								</code></pre>
+                                </div>
+                                <p> </p>
+                                <header class="minor">
+                                    <H3>Hunt State</H3>
+                                    </header>
+                                    <div>
+                                        <div>
+                                            <p>Now this was probably the most fun state to work on as it wasn't as straight forward as follow player, or follow this predetermined path. We needed a behavior that would be run when the AI losses track of the player or hears a sound it needs to investigate. Essentially what it does is that it goes to the last position that it knows some kind of player activity transgressed at and gets a bunch of points of interest. It then uses these as a one time patrol pattern to look for the player.</p>
+                                            <div class="box alt">
+                                                <div class="row gtr-50 gtr-uniform">
+                                                    <div class="col-3"></div>
+                                                    <div class="col-6">
+                                                        <video width="100%" height="auto"  autoplay loop muted>
+                                                            <source src="images/Hunt.mp4" type="video/mp4">
+                                                            <p>Ops, your browser can't display this</p>
+                                                        </video>
+                                                    </div>
+                                                    <div class="col-3"></div>
+                                                </div>
+                                            </div>
+
+                                            <p>Although the points of interest was not my first attempt at this. Some of my first ideas to solve this was to tries to generate random points within the proximity of the AI, but I did not figure out a good way to do it. Neither did I think this was a good solution as the AI could possibly end up at dumb positions staring into walls or corners.</p>
+                                        </div>
+                                    </div>
+                                <button class="accordion">Hunt State</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public class HuntState : EnemyAIState
+{
+    private float tickUp = 0;
+    private Vector3 firstPointOfinterest;
+    private List&ltVector3> interestPoints = new List&ltVector3>();
+    private int currentIndex = 0;
+
+    private bool hasStartedToLookAround = false;
+    private float animationTime = 6.5f;
+
+    public HuntState(EnemySystem inSystem) : base(inSystem)
+    {
+    }
+
+    public override void Start()
+    {
+        system.SetEyecolor(system.suspiciousColor);
+        firstPointOfinterest = system.lastPositionPlayerWasSpoted;
+        system.behaviourState = EnemyState.looking;
+        FindAllPointsOfInterest();
+        system.sfx.PlayGroan();
+    }
+
+    public override void Behaviour()
+    {
+
+        if (currentIndex &lt interestPoints.Count && !hasStartedToLookAround)
+        {
+            system.agent.SetDestination(interestPoints[currentIndex]);
+        }
+
+        if (IsInRangeOfWaypoint(interestPoints[currentIndex]))
+        {
+            LookAround();
+        }
+        
+        if(!hasStartedToLookAround)
+            system.sfx.PlayFootstep(State.Walk);
+
+        if (currentIndex == interestPoints.Count)
+        {
+            system.SetState(new PatrolState(system));
+        }
+        
+    }
+
+    void LookAround()
+    {
+        if(!hasStartedToLookAround)
+        {
+            system.agent.isStopped = true;
+            system.agent.SetDestination(system.transform.position);
+            system.animator.SetLookAround();
+            hasStartedToLookAround = true;
+        }
+        else
+        {
+            tickUp += Time.deltaTime;
+        }
+
+        if(tickUp >= animationTime)
+        {
+            system.agent.isStopped = false;
+            hasStartedToLookAround = false;
+            tickUp = 0;
+            currentIndex += 1;
+        }
+    }
+
+    public override void ReactToSound()
+    {
+        system.animator.SetEndLookAround();
+
+        if (currentIndex == 0)
+        {
+            firstPointOfinterest = system.lastPositionPlayerWasSpoted;
+            FindAllPointsOfInterest();
+            return;
+        }
+
+        system.lastPositionPlayerWasSpoted = system.sencingComponent.latestSoundPos;
+        if(system.sencingComponent.CanSeePlayer())
+        {
+            system.SetState(new NoticePlayerState(system));
+        }
+        else
+        {
+            system.SetState(new HuntState(system));
+        }
+        
+        base.ReactToSound();
+    }
+
+    public override void PlayerSpoted()
+    {
+        system.animator.SetEndLookAround();
+        system.SetState(new NoticePlayerState(system));
+        base.PlayerSpoted();
+    }
+
+    void FindAllPointsOfInterest()
+    {
+        Collider[] pointsOfInterest = Physics.OverlapSphere(firstPointOfinterest, system.huntRadius, system.huntPointsLayer);
+
+        if(pointsOfInterest.Length > 0)
+        {
+            interestPoints.Clear();
+            interestPoints.Add(firstPointOfinterest);
+            for(int i= 0; i &lt pointsOfInterest.Length; i++)
+            {
+                if(system.sencingComponent.IsPositionReachable(pointsOfInterest[i].transform.position))
+                    interestPoints.Add(pointsOfInterest[i].transform.position);
+            }
+        }
+        else
+        {
+            interestPoints.Clear();
+            interestPoints.Add(firstPointOfinterest);
+        }
+    }
+
+    bool IsInRangeOfWaypoint(Vector3 waypoint)
+    {
+        Vector3 dif = system.transform.position - waypoint;
+
+        if (dif.sqrMagnitude &lt system.closeEnougth * system.closeEnougth)
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
+								</code></pre>
+                                </div>
+                                <p></p>
+                                <header class="minor">
+                                    <H3>Grab State</H3>
+                                    </header>
+                                    <div>
+                                        <div>
+                                            <p>This is the player's final destination, if the AI ever get to this script the player is dead.</p>
+                                            <article>
+                                                <span class="image fit"><img src="images/grab.JPG" alt="" /></span>
+                                            </article>
+                                        </div>
+                                    </div>
+                                <button class="accordion">Grab State</button>
+								<div class="panel">
+								<pre><code class="prettyprint"style="font-size:12px">
+public class GrabState : EnemyAIState
+{
+    float deathDelay = 4f;
+    float deathTimer = 0f;
+    Vector3 v;
+
+    public GrabState(EnemySystem inSystem) : base(inSystem)
+    {
+    }
+
+    public override void Start()
+    {
+        system.behaviourState = EnemyState.grab;
+        v = system.grabTransform.position - (system.player.transform.up * (system.playerInput.movement.CharacterHeight / 2) * .9f);
+        system.playerInput.Grabbed(v,system.transform.position);
+
+        system.animator.SetGrab();
+        deathTimer = deathDelay;
+
+        base.Start();
+    }
+
+    public override void Behaviour()
+    {
+        if(deathTimer > 0)
+        {
+            v = system.grabTransform.position - (system.player.transform.up * (system.playerInput.movement.CharacterHeight / 2) * .9f);
+            system.player.transform.position = v;
+            system.player.transform.rotation = system.grabTransform.rotation;
+
+            deathTimer -= Time.deltaTime;
+            if(deathTimer &lt= 0)
+            {
+                system.playerStats.HitPoints -= system.damage;
+            }
+        }
+
+        base.Behaviour();
+    }
+}
+								</code></pre>
+                                </div>
+                                <p> </p>
+                                <header class="minor">
+                                    <H2> AI and World Interactions</H2>
+                                    </header>
+                                    <p>There where only two object types that the AI could interact with in the world, doors, and player hiding places. The AI finds either one using a Hit box in front of it, and decides what to do with it using its Enemy Interaction component.</p>
+                                    <button class="accordion">Interactable Detector</button>
+                                    <div class="panel">
+                                    <pre><code class="prettyprint"style="font-size:12px">
+public class InteractableDetector : MonoBehaviour
+{
+    public static Action&ltGameObject> interactableIsDetected = delegate { };
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.GetComponent&ltDoor>() == null && other.gameObject.GetComponent&ltHidingPlace>() == null)
+            return;
+        interactableIsDetected(other.gameObject);
+    }
+}
+                                    </code></pre>
+                                    </div>
+                                    <p></p>
+                                    <header class="minor">
+                                        <H3>Opening Doors</H3>
+                                        </header>
+                                    <div>
+                                        <div>
+                                            <p>Doors were added as a tool for the player to use to delay the AI a couple seconds, buying themselves time. The AI, if met with a door crossing its path, will after some time open it, and then continue doing whatever it was doing before. When the AI finds a closed door we tracing along the path the AI is following looking for it, and if it was found it will be opened.</p>
+                                        </div>
+                                    </div>
+                                    <div class="box alt">
+                                        <div class="row gtr-50 gtr-uniform">
+                                            <div class="col-3"></div>
+                                            <div class="col-6">
+                                                <video width="100%" height="auto"  autoplay loop muted>
+                                                    <source src="images/OpenDoor.mp4" type="video/mp4">
+                                                    <p>Ops, your browser can't display this</p>
+                                                </video>
+                                            </div>
+                                            <div class="col-3"></div>
+                                        </div>
+                                    </div>
+                                    <header class="minor">
+                                        <H3>Opening Hiding Places</H3>
+                                        </header>
+                                    <div>
+                                        <div>
+                                            <p>If the player failed to hide the AI was able to pull them out of said hiding spot causing the player to lose the game.</p>
+                                        </div>
+                                    </div>
+                                    <button class="accordion">Enemy Interact</button>
+                                    <div class="panel">
+                                    <pre><code class="prettyprint"style="font-size:12px">
+public class EnemyInteract
+{
+    EnemySystem system;
+
+    private Door door;
+    private HidingPlace hiding;
+    public bool canOpenADoor = false;
+    private float openDoorTimer = 0f;
+    private float doorBangTime;
+
+    public EnemyInteract(EnemySystem inSystem)
+    {
+        system = inSystem;
+    }
+
+    public void ActPerObjectType(GameObject obj)
+    {
+        door = obj.GetComponentInChildren&ltDoor>();
+        if (door)
+        {
+            StartOpenDoorsInTheWay();
+            return;
+        }
+
+        hiding = obj.GetComponentInChildren&ltHidingPlace>();
+        if (hiding)
+        {
+            if(system.playerStates.PlayerState == State.Hide && system.isPlayerSuccessfullyHidden == false)
+            {
+                hiding.StopHiding();
+            }
+        }
+    }
+
+    public void StartOpenDoorsInTheWay()
+    {
+        if (DoINeedToWalkThrougtThisObject(door.gameObject))
+        {
+            if ((door.DoorState == DoorState.Closing))
+            {
+                door.ChangeDoorState(system.transform.position);
+                return;
+            }
+
+            if ((door.DoorState == DoorState.Closed))
+            {
+                canOpenADoor = true;
+                system.agent.isStopped = true;
+                doorBangTime = 0;
+                return;
+            }
+        }
+    }
+
+    public void OpenDoorInTheWay()
+    {
+        if (Time.time > doorBangTime)
+        {
+            doorBangTime = Time.time + system.doorBangInterval;
+            door.BangDoor();
+        }
+        openDoorTimer += Time.deltaTime;
+        if (openDoorTimer > system.doorOpenTime)
+        {
+            
+            canOpenADoor = false;
+            openDoorTimer = 0;
+            system.agent.isStopped = false;
+            door.ChangeDoorState(system.transform.position, true);
+        }
+    }
+
+     public bool DoINeedToWalkThrougtThisObject(GameObject obj)
+    {
+        Vector3 pathEndPoint = system.agent.destination;
+        NavMeshPath path = new NavMeshPath();
+
+        if (system.agent.enabled)
+            system.agent.CalculatePath(pathEndPoint, path);
+
+        Vector3[] allWayPoints = new Vector3[path.corners.Length + 2];
+
+        allWayPoints[0] = system.transform.position;
+        allWayPoints[allWayPoints.Length - 1] = pathEndPoint;
+
+        for (int i = 0; i &lt path.corners.Length; i++)
+        {
+            allWayPoints[i + 1] = path.corners[i];
+        }
+
+        for (int i = 0; i &lt allWayPoints.Length - 1; i++)
+        {
+            RaycastHit hit;
+            Debug.DrawLine(allWayPoints[i], allWayPoints[i + 1], Color.green);
+            if (Physics.Linecast(allWayPoints[i], allWayPoints[i + 1], out hit, system.interactableLayer))
+            {
+                if (hit.collider.gameObject == obj)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+}
+                                    </code></pre>
+                                    </div>
+                                    <p></p>
+                                    <header class="minor">
+                                        <H2>AI Sensing</H2>
+                                        </header>
+                                    <div>
+                                        <div>
+                                            <p>The AI could both hear and see the player. To make it so that the AI can't hear through walls we compared a max length to the length of a navpath between the sound, and AI.</p>
+                                        </div>
+                                    </div>
+                                    <button class="accordion">Enemy Sence</button>
+                                    <div class="panel">
+                                    <pre><code class="prettyprint"style="font-size:12px">
+public class EnemySence 
+{
+    EnemySystem system;
+
+    public Vector3 latestSoundPos = Vector3.zero;
+
+    public EnemySence(EnemySystem inSystem)
+    {
+        system = inSystem;
+    }
+
+    #region Sight
+    public bool CanSeePlayer(bool ignoreInteractableLayer = false)
+    {
+        if(!IsPositionReachable(system.player.transform.position))
+        {
+            system.lastPositionPlayerWasSpoted = system.transform.position;
+            return false;
+        }
+
+        if (system.isPlayerSuccessfullyHidden == true)
+        {
+            if(system.playerStates.PlayerState == State.Hide)
+            {
+                return false;
+            }
+            else
+            {
+                system.isPlayerSuccessfullyHidden = false;
+            }
+        }
+        
+        Vector3 playerDir = system.player.transform.position - system.SightTransform.position;
+        float angle = Vector3.Angle(playerDir, system.transform.forward);
+
+        if (angle &lt system.sightConeAngle)
+        {
+            RaycastHit hit;
+
+            if (ignoreInteractableLayer == true)
+            {
+                if (Physics.Raycast(system.SightTransform.position, playerDir.normalized, out hit, system.sightRange,~system.interactableLayer))
+                {
+                    if(hit.collider.gameObject == system.player)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                if (Physics.Raycast(system.SightTransform.position, playerDir.normalized, out hit, system.sightRange, system.SightLayer))
+                {
+                    if (hit.collider.gameObject.GetComponentInChildren&ltPlayerInput>())
+                    {
+                        return true;
+                    }
+
+                }
+            }
+        }
+        return false;
+    }
+    #endregion
+
+    #region Hearing
+    public void CanHearPlayer(Sound sound)
+    {
+        if (!IsPositionReachable(sound.position))
+            return;
+
+        if (CalculatePathLength(sound.position) > system.maxHearingRange * system.maxHearingRange)
+            return;
+
+        latestSoundPos = sound.position;
+        if(system.heardSoundEvent != null)
+        {
+            system.heardSoundEvent.Invoke();
+        }
+    }
+
+    public float CalculatePathLength(Vector3 targetPosition, bool useSqrt = false)
+    {
+        NavMeshPath path = new NavMeshPath();
+
+        if (system.gameObject.activeSelf && system.agent.enabled)
+            system.agent.CalculatePath(targetPosition, path);
+
+        Vector3[] allWayPoints = new Vector3[path.corners.Length + 2];
+
+        allWayPoints[0] = system.transform.position;
+        allWayPoints[allWayPoints.Length - 1] = targetPosition;
+
+        for (int i = 0; i &lt path.corners.Length; i++)
+        {
+            allWayPoints[i + 1] = path.corners[i];
+        }
+
+        float pathLength = 0f;
+
+        if (!useSqrt)
+        {
+            for (int i = 0; i &lt allWayPoints.Length - 1; i++)
+            {
+                Vector3 dif = allWayPoints[i] - allWayPoints[i + 1];
+                pathLength += dif.sqrMagnitude;
+            }
+        }
+        else
+        {
+            for (int i = 0; i &lt allWayPoints.Length - 1; i++)
+            {
+                pathLength += Vector3.Distance(allWayPoints[i], allWayPoints[i + 1]);
+            }
+        }
+
+        return pathLength;
+    }
+    #endregion
+
+    public bool IsPositionReachable(Vector3 pos)
+    {
+        NavMeshPath path = new NavMeshPath();
+        if (system.gameObject.activeSelf && system.agent.enabled)
+            system.agent.CalculatePath(pos, path);
+        if (path.status != NavMeshPathStatus.PathComplete)
+            return false;
+        else
+            return true;
+    }
+}
+                                    </code></pre>
+                                    </div>
+                                    <p></p>
+                                        <header class="major">
+                                        <h3>
+                                            What I learned
+                                        </h3>
+                                        <p>The biggest problems the group had during the project, that I learned from, was not seeing the whole picture when reworking,objects, levels, scripts or anything really. We usual where trying to solve one thing but forgot to check other use cases. For example we changed the door so the player could either interact with the door frame or the open door to close it again, but as we did we didn't think about how the AI interacted with it, which resulted in it ignoring doors completely because we had moved what the AI used to.</p>
+                                    </header>
+							</section>
+
+					</div>
+
+
+				<!-- Copyright -->
+					<div id="copyright">
+						<ul><li>&copy; Untitled</li><li>Design: <a href="https://html5up.net">HTML5 UP</a></li></ul>
+					</div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+			<script>
+				var acc = document.getElementsByClassName("accordion");
+				var i;
+
+				for (i = 0; i < acc.length; i++) {
+				acc[i].addEventListener("click", function() {
+					this.classList.toggle("active");
+					var panel = this.nextElementSibling;
+					if (panel.style.maxHeight){
+					panel.style.maxHeight = null;
+					} else {
+					panel.style.maxHeight = panel.scrollHeight + "px";
+					} 
+				});
+				}
+			</script>
+
+	</body>
+
+
+
+</html>
